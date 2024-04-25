@@ -2,6 +2,8 @@
 
 A little demo playing around with http byte range requests!
 
+![browser window showing the demo](/public/demo.png)
+
 ```sh
 nvm use
 npm i
