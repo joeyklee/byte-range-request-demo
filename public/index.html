@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>demo</title>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        font-size: 16px;
+        font-family: monospace;
+      }
+
+      h1 {
+        margin: 0.5rem 0 1rem;
+      }
+
+      p {
+        margin: 0.5rem 0 1rem;
+      }
+
+      .container {
+        padding: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .demo-container {
+        border: 1px solid black;
+        padding: 1rem;
+      }
+
+      .text-key-btn-container {
+        margin: 1rem 0 1rem;
+      }
+
+      .text-key-btn {
+        padding: 0.5rem;
+        border: 1px solid black;
+        background-color: tomato;
+        color: white;
+        box-shadow: 2px 2px 0px black;
+      }
+      textarea {
+        border: 1px solid #eee;
+        background-color: #dcdcdc;
+        max-width: 600px;
+        display: block;
+        width: 100%;
+        height: 100px;
+        padding: 1rem;
+        margin: 1rem 0 1rem 0;
+      }
+      hr {
+        margin: 1.5rem 0 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>HTTP Byte Range Request Demo</h1>
+      <p>
+        Click these buttons to change the text. Each click fires an http
+        request:
+      </p>
+      <div class="text-key-btn-container">
+        <button class="text-key-btn" id="Hello">Hello</button>
+        <button class="text-key-btn" id="Joey">Joey</button>
+        <button class="text-key-btn" id="Imagine">Imagine</button>
+      </div>
+      <div class="demo-container">
+        <h1>Hello <span id="result">World</span>!</h1>
+      </div>
+
+      <hr />
+      <p>
+        This is a demo of using HTTP byte range requests to get parts of a file
+        rather than the entire file.
+      </p>
+      <p>
+        I've been thinking a lot about how cool
+        <a href="https://flatgeobuf.org/">flatgeobuffer</a> files are and have
+        been thinking more about how to take advantage byte range requests for
+        other data intensive applications that just require reads.
+      </p>
+      <p>
+        Here, just a subset of the text from each button is pulled out
+        dynamically from the static file rather than requesting all of the data.
+        The magic is having an index of the range of the bytes for each of the
+        strings in the buttons.
+      </p>
+      <p>
+        The complete text in the `example.jkl` file looks like: <br />
+        <textarea>
+          HelloJoeyImagineThisIsSomeKindOfSpecialFileFormatOrYouAreUsingSomeKindOfProtoBufThingToSerializeYourDataInACoolWay!!!
+        </textarea>
+      </p>
+    </div>
+    <script>
+      const $result = document.querySelector("#result");
+      const $textKeyButtons = document.querySelectorAll(".text-key-btn");
+
+      $textKeyButtons.forEach((el) => {
+        el.addEventListener("click", async (evt) => {
+          const { target } = evt;
+
+          console.log(target.id);
+          const data = await getText(target.id);
+          $result.textContent = data;
+        });
+      });
+
+      async function getText(textKey) {
+        const fileUrl = "http://localhost:3000/example.jkl"; // URL of the text file
+
+        // see example.jkl
+        // HelloJoeyImagineThisIsSomeKindOfSpecialFileFormatOrYouAreUsingSomeKindOfProtoBufThingToSerializeYourDataInACoolWay!!!
+        const textIndex = {
+          Hello: [0, 4],
+          Joey: [5, 8],
+          Imagine: [9, 15],
+        };
+        console.log("the text index: ", textIndex);
+
+        // Send a GET request with the Range header to retrieve a specific byte range
+        const [textStart, textEnd] = textIndex[textKey];
+        const data = await fetch(fileUrl, {
+          headers: {
+            Range: `bytes=${textStart}-${textEnd}`,
+          },
+        }).then((response) => {
+          // Check if the response is a partial content (206) and access the retrieved byte range
+          if (response.status === 206) {
+            return response.text(); // Assuming the response is text data
+          } else {
+            throw new Error(`An error occurred. Status: ${response.status}`);
+          }
+        });
+
+        console.log("----", data);
+        return data;
+      }
+    </script>
+  </body>
+</html>
